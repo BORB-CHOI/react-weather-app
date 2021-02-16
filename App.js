@@ -7,6 +7,7 @@ import Loading from "./Loading";
 import Weather from "./Weather";
 
 const { apiUrl, apiKey } = getEnvVars();
+let callWeather;
 
 export default class extends React.Component {
   state = {
@@ -14,10 +15,19 @@ export default class extends React.Component {
     temp: null,
   };
   getWeather = async (latitude, longitude) => {
-    const { data } = await axios.get(
+    const {
+      data: {
+        main: { temp },
+        weather,
+      },
+    } = await axios.get(
       `${apiUrl}?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`
     );
-    this.setState({ isLoading: false, temp: data.main.temp });
+    this.setState({
+      isLoading: false,
+      temp,
+      condition: weather[0].main,
+    });
   };
   getLocation = async () => {
     try {
@@ -33,8 +43,19 @@ export default class extends React.Component {
   componentDidMount() {
     this.getLocation();
   }
+  componentDidUpdate() {
+    callWeather = setTimeout(this.getLocation, 10000);
+  }
+  componentWillUnmount() {
+    clearTimeout(callWeather);
+  }
+
   render() {
-    const { isLoading, temp } = this.state;
-    return isLoading ? <Loading /> : <Weather temperture={Math.round(temp)} />;
+    const { isLoading, temp, condition } = this.state;
+    return isLoading ? (
+      <Loading />
+    ) : (
+      <Weather temperture={Math.round(temp)} condition={condition} />
+    );
   }
 }
